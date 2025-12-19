@@ -1,5 +1,5 @@
-name: "`r yourname`"
-description: "`r yourname`"
+name: "`r Rachel Roday`"
+description: "`r Rachel Roday`"
 output_dir: "docs"
 navbar:
   title: "<p><img id=\"logo\" style=\"width: 35px; display: inline-block; margin: 0px 0px\" src=\"img/logo.png\" /> YOUR NAME </p>"  
@@ -43,4 +43,4 @@ output:
     css: "styles.css"
 editor_options:
   chunk_output_type: console
-repository_url: "`r yourwebsitelink`"  
+repository_url: "`r https://github.com/rroday/Roday_Website/`"  
