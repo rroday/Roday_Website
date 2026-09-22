@@ -31,6 +31,11 @@ PKG <- c(
   "magrittr",
   "readr",
   "readxl",
+  "tidyr",
+  "stringr",
+  "lubridate",
+  "purrr",
+  "fs",
   
   # working with URLS
   "xml2",
@@ -40,7 +45,8 @@ PKG <- c(
   "leafpop",
   "maps", 
   
-  # google drive
+  # google drive (kept installed in case you ever refresh data locally from
+  # Drive again; not used by this script anymore)
   "googledrive",
   "googlesheets4",
   "readtext",
@@ -55,23 +61,23 @@ for (p in PKG) {
     require(p, character.only = TRUE)}
 }
 
-# Sign into google drive -------------------------------------------------------
+# Load Data ----------------------------------------------------------------
+# NOTE: Data now lives in the repo itself under /data (bio.docx, entries.csv,
+# language_skills.csv, text_blocks.csv, contact_info.csv). Google Drive is no
+# longer touched by this script, so it can run unattended in CI with no
+# credentials. To refresh /data from the Google Doc/Sheet, do that manually
+# and commit the updated files.
 
-googledrive::drive_deauth()
-googledrive::drive_auth()
+# Bio document: data/bio.docx is already in the repo, nothing to download.
 
-# Load Data --------------------------------------------------------------------
-
-# Bio Document (Google Doc ID extracted from your link)
-googledrive::drive_download(file = as_id("1re24bls67tKoh0AoDHRWsghtd31pRbCWMvX9UmAG9mc"), 
-                            type = "docx", 
-                            overwrite = TRUE, 
-                            path = paste0("./data/bio"))
-
-# CV Spreadsheet (Google Sheet ID extracted from your link)
+# CV data: reading from the local /data folder instead of the Google Sheet
+# triggers the local-CSV branch inside create_CV_object()/load_data() in
+# cv/functions_cv.R (it only hits Google Sheets when data_location contains
+# "docs.google.com"). Trailing slash matters - load_data() does
+# paste0(data_location, "entries.csv") with no separator.
 source("cv/functions_cv.R")
 cv_data <- create_CV_object(
-  data_location = "https://docs.google.com/spreadsheets/d/1PHonenli6TgmzKhNR2rxfV23tTyf3ZqiLigDD4_pv0Y",
+  data_location = "data/",
   cache_data = FALSE)
 dat0 <- cv_data$entries_data
 
