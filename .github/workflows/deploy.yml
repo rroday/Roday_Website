@@ -1,60 +1,80 @@
-name: Build and Deploy Distill Website
+name: Build and Deploy Site
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [main]
   schedule:
-    - cron: '0 8 1 * *' # Auto-rebuilds on the 1st of every month to pull latest updates
-  workflow_dispatch: # Allows manual trigger from the Actions tab
+    # 08:00 UTC on the 1st of every month
+    - cron: '0 8 1 * *'
+  workflow_dispatch: {}   # lets you trigger it manually from the Actions tab
+
+permissions:
+  contents: write   # needed so the workflow can commit the rebuilt /docs back to main
 
 jobs:
-  build-and-deploy:
+  build-deploy:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
 
-      - name: Set up R
-        uses: r-lib/actions/setup-r@v2
-        with:
-          r-version: '4.3.0'
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
 
       - name: Set up Pandoc
         uses: r-lib/actions/setup-pandoc@v2
 
-      - name: Set up Chrome (for pagedown PDF rendering)
-        uses: browser-actions/setup-chrome@latest
-
-      - name: Install R Dependencies
-        uses: r-lib/actions/setup-r-dependencies@v2
+      - name: Set up R
+        uses: r-lib/actions/setup-r@v2
         with:
-          extra-packages: |
-            any::rmarkdown
-            any::distill
-            any::pagedown
-            any::dplyr
-            any::glue
-            any::magrittr
-            any::readr
-            any::readxl
-            any::xml2
-            any::leaflet
-            any::leafpop
-            any::maps
-            any::googledrive
-            any::googlesheets4
-            any::readtext
-            any::fontawesome
-            any::fs
+          r-version: 'release'
+          use-public-rspm: true
 
-      - name: Run site build script
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libcurl4-openssl-dev \
+            libssl-dev \
+            libxml2-dev \
+            libfontconfig1-dev \
+            libfreetype6-dev \
+            libpng-dev \
+            libtiff5-dev \
+            libjpeg-dev \
+            libgit2-dev \
+            libharfbuzz-dev \
+            libfribidi-dev
+
+      - name: Set up Chrome (for pagedown PDF rendering)
+        uses: browser-actions/setup-chrome@v1
+
+      - name: Cache R packages
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.R_LIBS_USER }}
+          key: r-pkgs-${{ runner.os }}-${{ hashFiles('run.R') }}
+          restore-keys: r-pkgs-${{ runner.os }}-
+
+      - name: Install R packages
+        run: |
+          Rscript -e '
+          pkgs <- c(
+            "rmarkdown", "pagedown", "dplyr", "glue", "magrittr", "readr",
+            "readxl", "tidyr", "stringr", "lubridate", "purrr", "fs",
+            "xml2", "leaflet", "leafpop", "maps", "googledrive",
+            "googlesheets4", "readtext", "fontawesome"
+          )
+          installed <- rownames(installed.packages())
+          missing <- setdiff(pkgs, installed)
+          if (length(missing) > 0) install.packages(missing)
+          '
+
+      - name: Run build script
+        env:
+          CHROMOTE_CHROME: ${{ steps.setup-chrome.outputs.chrome-path }}
         run: Rscript run.R
 
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
+      - name: Commit and push rebuilt site
+        uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./docs
-          commit_message: "Automated site rebuild from GitHub Actions"
+          commit_message: "Automated site rebuild [skip ci]"
+          file_pattern: 'docs/* cv/cached_positions.rds'
