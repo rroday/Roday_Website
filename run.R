@@ -1,33 +1,23 @@
 # Metadata ---------------------------------------------------------------------
-# Personal Website
-# Developed by Emily Markowitz, for myself
-# Sept 2021
-
-# Directions -------------------------------------------------------------------
-# simply run this ONE line of code to get your website!
-# source("./run.R")
-
-# Notes
-# 1. Check that your gitignore includes your data folder, so it only shares what you want it to show. 
-# 2. Make copies of your own bio and cv_data google drive files and start filling them in. 
-# 3. Define yourname and yourwebsitelink
-# 4. Rename pages as you like, but you must have an index and an about page. 
+# Personal Website - Rachel Roday
+# Adapted from Emily Markowitz's template
 
 # Knowns -----------------------------------------------------------------------
 
-yourname <- "YOUR NAME" # "Yellowfin Sole"#
+yourname <- "Rachel E. Roday" 
 yournames <- c(yourname, 
-               "NAME, YOUR") # e.g., for paper authorships, as listed in cv_data.xlsx
-yourwebsitelink <- "https://EmilyMarkowitz-NOAA.github.io/personal_website_cv_template/"
+               "Roday, R. E.", 
+               "Roday, R.") # for paper authorships, as listed in your CV spreadsheet
+yourwebsitelink <- "https://rroday.github.io/"
 
 # Fine tuned editing
 
 title_ital <- c( # things that should always be italized in titles. 
   "Cum Laude",
-  "NOAAS SHIP NAME")
+  "Alosa sapidissima")
 desc_ital <- c("et al.") # things that should always be italized in descriptions. 
-desc_bullet_ital <- c("STUDY SPP",
-                   "NOAAS SHIP NAME")
+desc_bullet_ital <- c("STUDY SPP")
+
 # Libraries --------------------------------------------------------------------
 
 PKG <- c(
@@ -43,7 +33,7 @@ PKG <- c(
   "readxl",
   
   # working with URLS
-  "xml2", # check urls
+  "xml2",
   
   # mapping
   "leaflet",
@@ -52,73 +42,46 @@ PKG <- c(
   
   # google drive
   "googledrive",
-  "googlesheets4", # seems redundant, but maybe I'll get rid of this later
-  "readtext", # for reading docx files
+  "googlesheets4",
+  "readtext",
   
   # icons
-  "fontawesome" #devtools::install_github("rstudio/fontawesome")
+  "fontawesome"
 )
 
 for (p in PKG) {
-  if(!require(p,character.only = TRUE)) {
+  if(!require(p, character.only = TRUE)) {
     install.packages(p)
-    require(p,character.only = TRUE)}
+    require(p, character.only = TRUE)}
 }
-
-
 
 # Sign into google drive -------------------------------------------------------
 
 googledrive::drive_deauth()
 googledrive::drive_auth()
-1
 
 # Load Data --------------------------------------------------------------------
 
-# How to find the google drive ID of a document
-# Google Drive File ID is a unique identifier of the file on Google Drive. File IDs are stable throughout the lifespan of the file, even if the file name changes.
-# 
-# To locate the File ID, right-click on the name of the file, choose the Get Shareable Link option, and turn on Link Sharing if needed.
-# 
-# You will see the link with a combination of numbers and letters at the end, and what you see after `id =`  is the File ID.
-# https://drive.google.com/open?id=***ThisIsFileID***
-#   
-# If your file is already open in a browser, you can obtain File ID from its link:
-# https://docs.google.com/spreadsheets/d/***ThisIsFileID***/edit#gid=123456789 
+# Bio Document (Google Doc ID extracted from your link)
+googledrive::drive_download(file = as_id("1re24bls67tKoh0AoDHRWsghtd31pRbCWMvX9UmAG9mc"), 
+                            type = "docx", 
+                            overwrite = TRUE, 
+                            path = paste0("./data/bio"))
 
-
-# EXAMPLE Word document with Bio
-# Example: https://docs.google.com/document/d/1MbDrWQMzXn_3pxpuEnlHiX0juOhvwQtGGUrRLkkrczQ/edit?usp=sharing
-googledrive::drive_download(file = as_id("1MbDrWQMzXn_3pxpuEnlHiX0juOhvwQtGGUrRLkkrczQ"), 
-                              type = "docx", 
-                              overwrite = TRUE, 
-                              path = paste0("./data/bio"))
-1
-
-# EXAMPLE Spreadsheet with CV data
-# https://docs.google.com/spreadsheets/d/1fj0-LgxIgHC9qprjDfoyFqOUtUcWGMbMS28mCWf6as8
+# CV Spreadsheet (Google Sheet ID extracted from your link)
 source("cv/functions_cv.R")
 cv_data <- create_CV_object(
-  data_location = "https://docs.google.com/spreadsheets/d/1fj0-LgxIgHC9qprjDfoyFqOUtUcWGMbMS28mCWf6as8",
+  data_location = "https://docs.google.com/spreadsheets/d/1PHonenli6TgmzKhNR2rxfV23tTyf3ZqiLigDD4_pv0Y",
   cache_data = FALSE)
-1
 dat0 <- cv_data$entries_data
 
 # Edit Data --------------------------------------------------------------------
-
-
-# Check links
-# checkLinks(cv$img)
-# checkLinks(cv$url)
-# checkLinks(cv$url1)
-
-# Make formatting edits that are difficult to keep in a CSV
 
 dat0 <- dat0 %>%
   dplyr::mutate(public_cv = as.logical(public_cv)) %>%
   dplyr::mutate(website = as.logical(website)) %>%
   dplyr::mutate(custom_cv = as.logical(custom_cv)) %>%
-# Images
+  # Images
   dplyr::mutate(images = ifelse(is.na(img), "",
                               paste0("![*",img_txt,"*](",img,"){width='400px'}"))) %>%
   # URL links
@@ -152,12 +115,12 @@ dat0 <- dat0 %>%
     na.rm = TRUE
   ) %>%
   dplyr::mutate(description_bullets =
-                   ifelse(description_bullets != "",
-                          paste0("\n- ", description_bullets),
-                          "")) %>%
+                  ifelse(description_bullets != "",
+                         paste0("\n- ", description_bullets),
+                         "")) %>%
   dplyr::mutate(timeline =
                   dplyr::case_when(
-                    grepl(pattern = "[a-zA-Z]+", x = start) ~ start, # in review, in prep
+                    grepl(pattern = "[a-zA-Z]+", x = start) ~ start,
                     is.na(start) ~ "",
                     is.na(end) ~ as.character(start),
                     start == end ~ as.character(start),
@@ -176,18 +139,13 @@ dat0 <- dat0 %>%
                   ifelse(Links == "",
                          "",
                          paste0('Links: ', gsub(pattern = ' \n\n ',
-                                     replacement = ', ', x = Links), ''))) %>%
+                                                replacement = ', ', x = Links), ''))) %>%
   dplyr::arrange(desc(start))
-
-# dat0$description_1[dat0$page %in% "papers"] <- NA
-# dat0$description_2[dat0$page %in% "papers"] <- NA
-
 
 cv_data$entries_data <- dat0
 
 # Render CV --------------------------------------------------------------------
 
-# package up data for use in CV!
 source("cv/functions_cv.r")
 readr::write_rds(cv_data, 'cv/cached_positions.rds')
 cache_data <- TRUE
@@ -197,7 +155,6 @@ rmarkdown::render("cv/cv.rmd",
                   params = list(pdf_mode = FALSE,
                                 cache_data = cache_data),
                   output_file = "index.html")
-
 
 # Knit the PDF version to temporary html location
 tmp_html_cv_loc <- fs::file_temp(ext = ".html")
@@ -218,7 +175,6 @@ cv <-
   dplyr::filter(website == TRUE)
 
 sections <- c("about", "index", unique(cv$page))
-
 sections <- sections[sections != "other"]
 
 for (i in 1:length(sections)) {
@@ -226,7 +182,3 @@ for (i in 1:length(sections)) {
                     output_dir = "./docs/",
                     output_file = paste0(sections[i], ".html"))
 }
-
-
-
-
